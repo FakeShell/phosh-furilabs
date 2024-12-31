@@ -31,7 +31,6 @@
 #include "toplevel-manager.h"
 #include "torch-manager.h"
 #include "vpn-manager.h"
-#include "wifi-manager.h"
 
 #include <gtk/gtk.h>
 
@@ -134,5 +133,7 @@ gboolean             phosh_shell_get_blanked     (PhoshShell *self);
 gboolean             phosh_shell_activate_action (PhoshShell *self,
                                                   const char *action,
                                                   GVariant   *parameter);
+
+void                 phosh_shell_set_bg_alpha    (PhoshShell *self, double alpha);
 
 G_END_DECLS

@@ -3,8 +3,16 @@
  */
 phosh-top-panel {
   font-size: 15px;
-  background: @phosh_bg_color;
+  background: none;
   color: @phosh_fg_color;
+}
+
+phosh-top-panel-bg {
+  background: @phosh_bg_color;
+}
+
+#top-bar-bin {
+  transition: background-color 200ms ease;
 }
 
 #top-bar {
@@ -55,6 +63,13 @@ phosh-top-panel .phosh-topbar-date {
  * Settings menu
  */
 
+widget.phosh-settings-menu > scrolledwindow {
+    background-color: @phosh_bg_color;
+    border-radius: 24px;
+    margin-left: 6px;
+    margin-right: 6px;
+}
+
 .phosh-settings-menu {
   background-color: @phosh_bg_color;
   border-bottom-right-radius: 12px;
@@ -66,7 +81,7 @@ phosh-top-panel .phosh-topbar-date {
 }
 
 .phosh-settings-menu > scrolledwindow > viewport {
-  padding: 0 16px;
+  padding: 0 12px;
 }
 
 .phosh-settings-menu separator {
@@ -218,10 +233,12 @@ phosh-status-page-placeholder > box > label.title {
   font-size: 90%;
 }
 
-/* phosh-home */
+/*
+ * phosh-home
+ */
 
 #powerbar {
-  background: -gtk-recolor(url('resource:///sm/puri/phosh/icons/scalable/status/input-powerbar-symbolic.svg'));
+  background: -gtk-recolor(url('resource:///mobi/phosh/icons/scalable/status/input-powerbar-symbolic.svg'));
   background-position: center;
   background-size: 150px 15px;
   background-repeat: no-repeat;
@@ -251,7 +268,7 @@ phosh-status-page-placeholder > box > label.title {
 }
 
 /*
- * Overview (app grid with favories and, activities)
+ * Overview (app grid with favorites and activities)
  */
 
 phosh-activity > widget > button {
@@ -261,8 +278,6 @@ phosh-activity > widget > button {
   padding: 4px;
   border-radius: 6px;
   color: inherit;
-  padding: 4px;
-  transition: none;
 }
 
 phosh-activity > widget > button:hover {
@@ -281,12 +296,16 @@ phosh-activity box button {
 }
 
 phosh-activity.phosh-empty {
-  background: url('resource:///sm/puri/phosh/fake-app.svg');
+  background: url('resource:///mobi/phosh/fake-app.svg');
   background-size: cover;
 }
 
+phosh-activity.phosh-maximized .phosh-drawingarea {
+  background-color: @phosh_activity_bg_color;
+}
+
 phosh-home {
-  background: @phosh_bg_color;
+  background: none;
   color: @phosh_fg_color;
 }
 
@@ -299,7 +318,7 @@ phosh-home {
 }
 
 .phosh-overview {
-  background: @phosh_bg_color;
+  background: none;
   color: @phosh_fg_color;
 }
 
@@ -341,7 +360,7 @@ phosh-home {
 }
 
 phosh-app-grid {
-  background: @phosh_bg_color;
+  background: none;
   color: @phosh_fg_color;
 }
 
@@ -360,15 +379,30 @@ phosh-app-grid-button button {
   background: none;
 }
 
+phosh-app-grid-button button:active,
+phosh-app-grid-button button:hover:active,
+phosh-app-grid-button button:focus {
+  background: alpha(@phosh_bg_color,.4);
+}
+
 phosh-app-grid-folder-button button {
   font-size: 0.8rem;
   border-radius: 9px;
   margin: 0;
   padding: 0;
+  background: alpha(@phosh_bg_color,.4);
+}
+
+phosh-app-grid-folder-button button:active,
+phosh-app-grid-folder-button button:hover,
+phosh-app-grid-folder-button button:hover:active,
+phosh-app-grid-folder-button button:focus {
+  background: alpha(@phosh_bg_color,.6);
 }
 
 .search-active phosh-app-grid-button:first-child button {
-  background: @phosh_button_hover_bg_color;
+  box-shadow: inset 0 0 0 2px @theme_selected_bg_color;
+  background: alpha(@phosh_bg_color,.4);
 }
 
 #phosh-filter-adaptive-btn {
@@ -1008,6 +1042,15 @@ phosh-emergency-menu .emergency-button {
 }
 
 /*
+ * Common style classes
+ */
+
+/* Use a solid background, useful when one needs to toggle between transparent and solid */
+.p-solid {
+  background-color: @phosh_bg_color;
+}
+
+/*
  * GTK Overrides
  */
 
@@ -1063,7 +1106,6 @@ button.suggested-action {
 button.suggested-action:focus {
   box-shadow: inset 0 0 0 2px alpha(@theme_selected_fg_color, 0.3);
 }
-
 
 /* FIXME: an override to prevent double highlighting on some buttons */
 phosh-quick-setting button:focus,

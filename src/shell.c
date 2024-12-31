@@ -25,6 +25,7 @@
 
 #include "phosh-config.h"
 #include "ambient.h"
+#include "background.h"
 #include "drag-surface.h"
 #include "shell.h"
 #include "app-tracker.h"
@@ -34,6 +35,7 @@
 #include "bt-manager.h"
 #include "connectivity-info.h"
 #include "calls-manager.h"
+#include "cell-broadcast-manager.h"
 #include "docked-info.h"
 #include "docked-manager.h"
 #include "emergency-calls-manager.h"
@@ -84,6 +86,7 @@
 #include "suspend-manager.h"
 #include "system-prompter.h"
 #include "top-panel.h"
+#include "top-panel-bg.h"
 #include "torch-manager.h"
 #include "torch-info.h"
 #include "util.h"
@@ -175,6 +178,7 @@ typedef struct
   PhoshLayoutManager *layout_manager;
   PhoshStyleManager *style_manager;
   PhoshLauncherEntryManager *launcher_entry_manager;
+  PhoshCellBroadcastManager *cell_broadcast_manager;
 
   /* sensors */
   PhoshSensorProxyManager *sensor_proxy_manager;
@@ -262,8 +266,7 @@ update_top_level_layer (PhoshShell *self)
     return;
 
   g_debug ("Moving top-panel to %s layer", use_top_layer ? "top" : "overlay");
-  phosh_layer_surface_set_layer (PHOSH_LAYER_SURFACE (priv->top_panel), layer);
-  phosh_layer_surface_wl_surface_commit (PHOSH_LAYER_SURFACE (priv->top_panel));
+  phosh_top_panel_set_layer (PHOSH_TOP_PANEL (priv->top_panel), layer);
 }
 
 
@@ -302,6 +305,10 @@ on_home_state_changed (PhoshShell *self, GParamSpec *pspec, PhoshHome *home)
   priv = phosh_shell_get_instance_private (self);
 
   state = phosh_home_get_state (PHOSH_HOME (priv->home));
+
+  phosh_top_panel_set_bar_transparent (PHOSH_TOP_PANEL (priv->top_panel),
+                                       (state != PHOSH_HOME_STATE_FOLDED));
+
   phosh_shell_set_state (self, PHOSH_STATE_OVERVIEW, state == PHOSH_HOME_STATE_UNFOLDED);
 }
 
@@ -356,6 +363,7 @@ setup_primary_monitor_signal_handlers (PhoshShell *self)
     on_primary_monitor_configured (self, priv->primary_monitor);
 }
 
+
 static void
 panels_create (PhoshShell *self)
 {
@@ -369,6 +377,8 @@ panels_create (PhoshShell *self)
   g_return_if_fail (monitor);
 
   top_layer = priv->locked ? ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY : ZWLR_LAYER_SHELL_V1_LAYER_TOP;
+
+  /* Top panel */
   priv->top_panel = PHOSH_DRAG_SURFACE (phosh_top_panel_new (
                                           phosh_wayland_get_zwlr_layer_shell_v1 (wl),
                                           phosh_wayland_get_zphoc_layer_shell_effects_v1 (wl),
@@ -376,6 +386,7 @@ panels_create (PhoshShell *self)
                                           top_layer));
   gtk_widget_show (GTK_WIDGET (priv->top_panel));
 
+  /* Home is created after the top-panel so it honors its exclusive zone */
   priv->home = PHOSH_DRAG_SURFACE (phosh_home_new (phosh_wayland_get_zwlr_layer_shell_v1 (wl),
                                                    phosh_wayland_get_zphoc_layer_shell_effects_v1 (wl),
                                                    monitor));
@@ -509,6 +520,7 @@ phosh_shell_dispose (GObject *object)
   g_clear_object (&priv->notification_banner);
 
   /* dispose managers in opposite order of declaration */
+  g_clear_object (&priv->cell_broadcast_manager);
   g_clear_object (&priv->launcher_entry_manager);
   g_clear_object (&priv->power_menu_manager);
   g_clear_object (&priv->emergency_calls_manager);
@@ -712,10 +724,9 @@ setup_idle_cb (PhoshShell *self)
   priv->layout_manager = phosh_layout_manager_new ();
 
   if (!priv->kiosk_mode_apps) {
-    panels_create (self);
-
-    /* Create background after panel since it needs the panel's size */
+    /* PhoshHome needs the background manager */
     priv->background_manager = phosh_background_manager_new ();
+    panels_create (self);
   } else {
     /* Since kiosk mode does not load the panels, docked_manager is ultimately never created
        This happens because its instantiation is actually an indirect side effect of the panel creation
@@ -791,6 +802,7 @@ setup_idle_cb (PhoshShell *self)
   priv->suspend_manager = phosh_suspend_manager_new ();
   priv->emergency_calls_manager = phosh_emergency_calls_manager_new ();
   priv->power_menu_manager = phosh_power_menu_manager_new ();
+  priv->cell_broadcast_manager = phosh_cell_broadcast_manager_new ();
 
   setup_primary_monitor_signal_handlers (self);
 
@@ -1037,7 +1049,7 @@ phosh_shell_constructed (GObject *object)
   }
 
   gtk_icon_theme_add_resource_path (gtk_icon_theme_get_default (),
-                                    "/sm/puri/phosh/icons");
+                                    "/mobi/phosh/icons");
 
   priv->calls_manager = phosh_calls_manager_new ();
   priv->launcher_entry_manager = phosh_launcher_entry_manager_new ();
@@ -2501,7 +2513,6 @@ phosh_shell_get_blanked (PhoshShell *self)
 
   return phosh_shell_get_state (self) & PHOSH_STATE_BLANKED;
 }
-
 
 /**
  * phosh_shell_activate_action:
