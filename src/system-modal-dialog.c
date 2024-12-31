@@ -126,11 +126,10 @@ phosh_system_modal_dialog_get_property (GObject    *obj,
                                         GParamSpec *pspec)
 {
   PhoshSystemModalDialog *self = PHOSH_SYSTEM_MODAL_DIALOG (obj);
-  PhoshSystemModalDialogPrivate *priv = phosh_system_modal_dialog_get_instance_private (self);
 
   switch (prop_id) {
   case PROP_TITLE:
-    g_value_set_string (value, priv->title);
+    g_value_set_string (value, phosh_system_modal_dialog_get_title (self));
     break;
   default:
     G_OBJECT_WARN_INVALID_PROPERTY_ID (obj, prop_id, pspec);
@@ -143,27 +142,6 @@ static void
 on_removed_by_swipe (PhoshSystemModalDialog *self)
 {
   g_signal_emit (self, signals[DIALOG_CANCELED], 0);
-}
-
-
-static gboolean
-on_key_press_event (PhoshSystemModalDialog *self, GdkEventKey *event, gpointer data)
-{
-  gboolean handled = FALSE;
-
-  g_return_val_if_fail (PHOSH_IS_SYSTEM_MODAL_DIALOG (self), FALSE);
-
-  switch (event->keyval) {
-  case GDK_KEY_Escape:
-    g_signal_emit (self, signals[DIALOG_CANCELED], 0);
-    handled = TRUE;
-    break;
-  default:
-    /* nothing to do */
-    break;
-  }
-
-  return handled;
 }
 
 
@@ -185,6 +163,7 @@ phosh_system_modal_dialog_class_init (PhoshSystemModalDialogClass *klass)
 {
   GObjectClass *object_class = G_OBJECT_CLASS (klass);
   GtkWidgetClass *widget_class = GTK_WIDGET_CLASS (klass);
+  GtkBindingSet *binding_set;
 
   object_class->get_property = phosh_system_modal_dialog_get_property;
   object_class->set_property = phosh_system_modal_dialog_set_property;
@@ -210,16 +189,21 @@ phosh_system_modal_dialog_class_init (PhoshSystemModalDialogClass *klass)
    */
   signals[DIALOG_CANCELED] = g_signal_new ("dialog-canceled",
                                            G_TYPE_FROM_CLASS (klass),
-                                           G_SIGNAL_RUN_LAST, 0, NULL, NULL,
-                                           NULL, G_TYPE_NONE, 0);
+                                           G_SIGNAL_RUN_LAST | G_SIGNAL_ACTION,
+                                           0, NULL, NULL, NULL,
+                                           G_TYPE_NONE,
+                                           0);
 
   g_type_ensure (PHOSH_TYPE_SWIPE_AWAY_BIN);
   gtk_widget_class_set_template_from_resource (widget_class,
-                                               "/sm/puri/phosh/ui/system-modal-dialog.ui");
+                                               "/mobi/phosh/ui/system-modal-dialog.ui");
   gtk_widget_class_bind_template_child_private (widget_class, PhoshSystemModalDialog, lbl_title);
   gtk_widget_class_bind_template_child_private (widget_class, PhoshSystemModalDialog, box_dialog);
   gtk_widget_class_bind_template_child_private (widget_class, PhoshSystemModalDialog, box_buttons);
   gtk_widget_class_bind_template_callback (widget_class, on_removed_by_swipe);
+
+  binding_set = gtk_binding_set_by_class (klass);
+  gtk_binding_entry_add_signal (binding_set, GDK_KEY_Escape, 0, "dialog-canceled", 0);
 }
 
 
@@ -262,12 +246,6 @@ static void
 phosh_system_modal_dialog_init (PhoshSystemModalDialog *self)
 {
   gtk_widget_init_template (GTK_WIDGET (self));
-
-  gtk_widget_add_events (GTK_WIDGET (self), GDK_KEY_PRESS_MASK);
-  g_signal_connect (G_OBJECT (self),
-                    "key_press_event",
-                    G_CALLBACK (on_key_press_event),
-                    NULL);
 }
 
 /**
@@ -365,6 +343,26 @@ phosh_system_modal_dialog_get_buttons (PhoshSystemModalDialog *self)
   return gtk_container_get_children (GTK_CONTAINER (priv->box_buttons));
 }
 
+/**
+ * phosh_system_modal_dialog_get_title:
+ * @self: The dialog
+ *
+ * Get the dialog's title.
+ *
+ * Returns: The dialog's title
+ *
+ * Since: 0.44.0
+ */
+const char *
+phosh_system_modal_dialog_get_title (PhoshSystemModalDialog *self)
+{
+  PhoshSystemModalDialogPrivate *priv;
+
+  g_return_val_if_fail (PHOSH_IS_SYSTEM_MODAL_DIALOG (self), NULL);
+  priv = phosh_system_modal_dialog_get_instance_private (PHOSH_SYSTEM_MODAL_DIALOG (self));
+
+  return priv->title;
+}
 
 void
 phosh_system_modal_dialog_set_title (PhoshSystemModalDialog *self, const gchar *title)

@@ -9,12 +9,15 @@
 #define G_LOG_DOMAIN "phosh-notification-banner"
 
 #include "phosh-config.h"
+#include "animation.h"
 #include "notification-banner.h"
 #include "notification-frame.h"
 #include "shell.h"
 #include "util.h"
 
 #include <handy.h>
+
+#define BANNER_MIN_WIDTH 360
 
 /**
  * PhoshNotificationBanner:
@@ -37,10 +40,8 @@ struct _PhoshNotificationBanner {
   gulong handler_expired;
   gulong handler_closed;
 
-  struct {
-    double progress;
-    gint64  last_frame;
-  } animation;
+  gboolean slide_up;
+  PhoshAnimation *animation;
 };
 typedef struct _PhoshNotificationBanner PhoshNotificationBanner;
 
@@ -57,6 +58,32 @@ clear_handler (PhoshNotificationBanner *self)
 
 
 static void
+phosh_notification_banner_slide (double value, gpointer user_data)
+{
+  PhoshNotificationBanner *self = PHOSH_NOTIFICATION_BANNER (user_data);
+  int margin, height;
+
+  gtk_window_get_size (GTK_WINDOW (self), NULL, &height);
+  margin = -(height * 0.9) * (self->slide_up ? value : (1.0 - value));
+
+  phosh_layer_surface_set_margins (PHOSH_LAYER_SURFACE (self), margin, 0, 0, 0);
+
+  phosh_layer_surface_wl_surface_commit (PHOSH_LAYER_SURFACE (self));
+}
+
+
+static void
+phosh_notification_banner_slide_done (gpointer user_data)
+{
+  PhoshNotificationBanner *self = PHOSH_NOTIFICATION_BANNER (user_data);
+
+  g_clear_pointer (&self->animation, phosh_animation_unref);
+  if (self->slide_up)
+    gtk_widget_destroy (GTK_WIDGET (self));
+}
+
+
+static void
 expired (PhoshNotification       *notification,
          PhoshNotificationBanner *self)
 {
@@ -65,8 +92,20 @@ expired (PhoshNotification       *notification,
 
   clear_handler (self);
 
-  /* Close the banner */
-  gtk_widget_destroy (GTK_WIDGET (self));
+  if (gtk_widget_get_mapped (GTK_WIDGET (self))) {
+    self->slide_up = TRUE;
+    self->animation = phosh_animation_new (GTK_WIDGET (self),
+                                           0.0,
+                                           1.0,
+                                           250 * PHOSH_ANIMATION_SLOWDOWN,
+                                           PHOSH_ANIMATION_TYPE_EASE_IN_QUINTIC,
+                                           phosh_notification_banner_slide,
+                                           phosh_notification_banner_slide_done,
+                                           self);
+    phosh_animation_start (self->animation);
+  } else {
+    gtk_widget_destroy (GTK_WIDGET (self));
+  }
 }
 
 
@@ -151,6 +190,7 @@ phosh_notification_banner_finalize (GObject *object)
 
   clear_handler (self);
 
+  g_clear_pointer (&self->animation, phosh_animation_unref);
   g_clear_object (&self->notification);
 
   G_OBJECT_CLASS (phosh_notification_banner_parent_class)->finalize (object);
@@ -158,62 +198,17 @@ phosh_notification_banner_finalize (GObject *object)
 
 
 static void
-phosh_notification_banner_slide (PhoshNotificationBanner *self)
+phosh_notification_banner_map (GtkWidget *widget)
 {
-  int margin;
+  PhoshNotificationBanner *self = PHOSH_NOTIFICATION_BANNER (widget);
   int height;
-  double progress = hdy_ease_out_cubic (self->animation.progress);
 
-  gtk_window_get_size (GTK_WINDOW (self), NULL, &height);
-  margin = -(height * 0.9) * (1.0 - progress);
+  GTK_WIDGET_CLASS (phosh_notification_banner_parent_class)->map (widget);
 
-  phosh_layer_surface_set_margins (PHOSH_LAYER_SURFACE (self), margin, 0, 0, 0);
+  height = gtk_widget_get_allocated_height (widget);
+  phosh_layer_surface_set_size (PHOSH_LAYER_SURFACE (widget), -1, height);
 
-  phosh_layer_surface_wl_surface_commit (PHOSH_LAYER_SURFACE (self));
-}
-
-
-static gboolean
-animate_down_cb (GtkWidget     *widget,
-                 GdkFrameClock *frame_clock,
-                 gpointer       user_data)
-{
-  gint64 time;
-  gboolean finished = FALSE;
-  PhoshNotificationBanner *self = PHOSH_NOTIFICATION_BANNER (widget);
-
-  time = gdk_frame_clock_get_frame_time (frame_clock) - self->animation.last_frame;
-  if (self->animation.last_frame < 0) {
-    time = 0;
-  }
-
-  self->animation.progress += 0.06666 * time / 16666.00;
-  self->animation.last_frame = gdk_frame_clock_get_frame_time (frame_clock);
-
-  if (self->animation.progress >= 1.0) {
-    finished = TRUE;
-    self->animation.progress = 1.0;
-  }
-
-  phosh_notification_banner_slide (self);
-
-  return finished ? G_SOURCE_REMOVE : G_SOURCE_CONTINUE;
-}
-
-
-static void
-phosh_notification_banner_show (GtkWidget *widget)
-{
-  PhoshNotificationBanner *self = PHOSH_NOTIFICATION_BANNER (widget);
-  gboolean enable_animations;
-
-  enable_animations = hdy_get_enable_animations (GTK_WIDGET (self));
-
-  self->animation.last_frame = -1;
-  self->animation.progress = enable_animations ? 0.0 : 1.0;
-  gtk_widget_add_tick_callback (GTK_WIDGET (self), animate_down_cb, NULL, NULL);
-
-  GTK_WIDGET_CLASS (phosh_notification_banner_parent_class)->show (widget);
+  phosh_animation_start (self->animation);
 }
 
 
@@ -227,7 +222,7 @@ phosh_notification_banner_class_init (PhoshNotificationBannerClass *klass)
   object_class->set_property = phosh_notification_banner_set_property;
   object_class->get_property = phosh_notification_banner_get_property;
 
-  widget_class->show = phosh_notification_banner_show;
+  widget_class->map = phosh_notification_banner_map;
 
   /**
    * PhoshNotificationBanner:notification:
@@ -248,7 +243,14 @@ phosh_notification_banner_class_init (PhoshNotificationBannerClass *klass)
 static void
 phosh_notification_banner_init (PhoshNotificationBanner *self)
 {
-  self->animation.progress = 0.0;
+  self->animation = phosh_animation_new (GTK_WIDGET (self),
+                                         0.0,
+                                         1.0,
+                                         250 * PHOSH_ANIMATION_SLOWDOWN,
+                                         PHOSH_ANIMATION_TYPE_EASE_OUT_CUBIC,
+                                         phosh_notification_banner_slide,
+                                         phosh_notification_banner_slide_done,
+                                         self);
 }
 
 
@@ -257,18 +259,21 @@ phosh_notification_banner_new (PhoshNotification *notification)
 {
   PhoshWayland *wl = phosh_wayland_get_default ();
   PhoshMonitor *monitor = phosh_shell_get_primary_monitor (phosh_shell_get_default ());
-  int width = 360;
+  int width = BANNER_MIN_WIDTH;
 
-  phosh_shell_get_usable_area (phosh_shell_get_default (),
-                               NULL, NULL, &width, NULL);
+  phosh_shell_get_usable_area (phosh_shell_get_default (), NULL, NULL, &width, NULL);
 
   return g_object_new (PHOSH_TYPE_NOTIFICATION_BANNER,
                        "notification", notification,
+                       "width-request", BANNER_MIN_WIDTH,
+                       "valign", GTK_ALIGN_CENTER,
                        /* layer surface */
                        "layer-shell", phosh_wayland_get_zwlr_layer_shell_v1 (wl),
                        "wl-output", monitor ? monitor->wl_output : NULL,
                        "anchor", ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP,
                        "width", MIN (width, 450),
+                       /* Initial height to not take up the whole screen */
+                       "height", 100,
                        "layer", ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY,
                        "kbd-interactivity", FALSE,
                        "exclusive-zone", 0,
