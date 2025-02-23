@@ -201,8 +201,7 @@ code ='''
 struct rfkill_event_ext e;
 '''
 have_rfkill_event_ext = cc.compiles(code, name : 'Have rfkill_event_ext')
-have_memfd_create = cc.has_function('memfd_create', prefix: '''#define _GNU_SOURCE
-                                                               #include <sys/mman.h>''')
+have_memfd_create = false
 have_mm_cbm = true
 # Check CBM support thoroughly as API isn't in a released MM version yet
 foreach f: [
