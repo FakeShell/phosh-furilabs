@@ -15,6 +15,14 @@ phosh-top-panel-bg {
   transition: background-color 200ms ease;
 }
 
+#top-bar-bin:not(.p-solid) #top-bar label {
+  text-shadow: 1px 1px 1.1px rgba(0, 0, 0, 0.3);
+}
+
+#top-bar-bin:not(.p-solid) #top-bar image {
+  -gtk-icon-shadow: 1px 1px 1.1px rgba(0, 0, 0, 0.3);
+}
+
 #top-bar {
   padding-top: 4px;
   padding-bottom: 4px;
@@ -275,9 +283,11 @@ phosh-activity > widget > button {
   background: none;
   transition: none;
   border: none;
-  padding: 4px;
   border-radius: 6px;
   color: inherit;
+  /* don't add padding here - it will break PhoshActivity's sizing */
+  /* use GtkDrawingArea's margin instead */
+  padding: 0px;
 }
 
 phosh-activity > widget > button:hover {
@@ -313,7 +323,7 @@ phosh-home {
   min-width: 32px;
   min-height: 32px;
   padding: 8px;
-  margin: 6px;
+  margin: 10px;
   border-radius: 50%;
 }
 
@@ -379,6 +389,10 @@ phosh-app-grid-button button {
   background: none;
 }
 
+phosh-home:not(.p-solid) phosh-app-grid label {
+  text-shadow: 1px 1px 1.1px rgba(0, 0, 0, 0.3);
+}
+
 phosh-app-grid-button button:active,
 phosh-app-grid-button button:hover:active,
 phosh-app-grid-button button:focus {
@@ -419,7 +433,16 @@ phosh-app-grid-folder-button button:focus {
  * Lock screen
  */
 
-phosh-lockscreen,
+phosh-lockscreen {
+  background-color: transparent;
+  color: @phosh_fg_color;
+}
+
+phosh-lockscreen-bg {
+  background-color: @phosh_bg_color;
+  color: @phosh_fg_color;
+}
+
 .phosh-lockshield {
   background-color: @phosh_bg_color;
   color: @phosh_fg_color;
@@ -433,6 +456,7 @@ phosh-lockscreen,
   margin: 12px 0;
   transition: 200ms ease;
   padding-top: 40px;
+  text-shadow: 1px 1px 1.1px rgba(0, 0, 0, 0.3);
 }
 
 #phosh-lockscreen-date {
@@ -440,6 +464,7 @@ phosh-lockscreen,
   font-size: 18px;
   margin: 6px 0;
   transition: 200ms ease;
+  text-shadow: 1px 1px 1.1px rgba(0, 0, 0, 0.3);
 }
 
 .p-small #phosh-lockscreen-clock {
@@ -460,6 +485,10 @@ phosh-lockscreen,
   animation-iteration-count: 15;
 }
 
+.phosh-lockscreen-arrow + label {
+  text-shadow: 1px 1px 1.1px rgba(0, 0, 0, 0.3);
+}
+
 .phosh-lockscreen-status-icons {
   padding: 6px;
 }
@@ -475,18 +504,24 @@ phosh-lockscreen,
   box-shadow:none;
   outline: none;
   caret-color: transparent;
+  text-shadow: 1px 1px 1.1px rgba(0, 0, 0, 0.3);
+}
+
+.phosh-lockscreen-unlocker > label {
+  text-shadow: 1px 1px 1.1px rgba(0, 0, 0, 0.3);
 }
 
 @keyframes pulsate {
-  0% {-gtk-icon-transform: translateY(0); opacity: 0.7}
-  35% {-gtk-icon-transform: translateY(-14px); opacity: 1}
-  100% {-gtk-icon-transform: translateY(0); opacity: 0.7}
+  0% {-gtk-icon-transform: translateY(0); opacity: 0.7;}
+  35% {-gtk-icon-transform: translateY(-14px); opacity: 1;}
+  100% {-gtk-icon-transform: translateY(0); opacity: 0.7;}
 }
 
 /* Lockscreen keypad */
 phosh-keypad label.digit {
   font-size: 200%;
   font-weight: bold;
+  text-shadow: 1px 1px 1.1px rgba(0, 0, 0, 0.3);
 }
 
 phosh-keypad button {
@@ -497,6 +532,16 @@ phosh-keypad button {
   background: none;
 }
 
+phosh-keypad image {
+  -gtk-icon-shadow: 1px 1px 1.1px rgba(0, 0, 0, 0.3);
+}
+
+phosh-keypad button:active label,
+phosh-keypad button:active image {
+  text-shadow: none;
+  -gtk-icon-shadow: none;
+}
+
 phosh-lockscreen .text-only-button {
   font-size: 16px;
   font-weight: bold;
@@ -505,6 +550,10 @@ phosh-lockscreen .text-only-button {
 
 phosh-lockscreen cui-call-display actionbar {
   background-color: @phosh_bg_color;
+}
+
+phosh-lockscreen cui-call-display label {
+  text-shadow: 1px 1px 1.1px rgba(0, 0, 0, 0.3);
 }
 
 phosh-lockscreen .phosh-notification-tray {
@@ -645,6 +694,11 @@ phosh-notification-content .message-area {
   padding: 12px 12px 9px 12px;
 }
 
+.phosh-notification-body:focus {
+  box-shadow: inset 0 0 0 2px @theme_selected_bg_color;
+  outline-style: none;
+}
+
 phosh-notification-content .message-area image {
   border-radius: 50%;
 }
@@ -751,11 +805,6 @@ phosh-notification-banner .notification-container {
 
 .phosh-notification-tray list row .notification-container {
   margin-top: 12px;
-}
-
-.phosh-notification-tray list row:focus .notification-container {
-  box-shadow: inset 0 0 0 2px @theme_selected_bg_color;
-  outline-style: none;
 }
 
 .phosh-notifications-header {

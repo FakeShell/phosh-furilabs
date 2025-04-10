@@ -8,10 +8,13 @@ Build-Depends:
  libadwaita-1-dev,
  libcallaudio-dev,
  libevince-dev,
+ libgirepository1.0-dev,
  libgmobile-dev,
+ libjson-glib-dev,
  libsecret-1-dev,
  libsystemd-dev,
  libfeedback-dev (>= 0.7.0),
+ libfribidi-dev,
  libgcr-3-dev,
  libgirepository1.0-dev <!nodoc>,
  libgnome-bluetooth-3.0-dev,
@@ -28,14 +31,17 @@ Build-Depends:
  libpulse-dev,
  libupower-glib-dev,
  libwayland-dev,
+ libxml2-utils,
  meson,
  python3-docutils <!nodoc>,
 # for the plugins
  libecal2.0-dev,
  evolution-data-server-dev,
+ universal-ctags,
 # to run the tests
  at-spi2-core <!nocheck>,
  desktop-file-utils <!nocheck>,
+ flake8 <!nocheck>,
  dbus-daemon <!nocheck>,
  gnome-settings-daemon-common <!nocheck>,
  gnome-shell-common <!nocheck>,
@@ -61,12 +67,16 @@ Depends:
  phoc (>= 0.44.0-1+furios1~),
  phosh-common (= ${source:Version}),
  phosh-config-hwcomposer (>= 17),
+ libcap2-bin,
 Recommends:
  feedbackd (>= 0.5.0),
+ fonts-cantarell,
  gnome-session-bin,
  gnome-session-common,
  gnome-settings-daemon,
  iio-sensor-proxy,
+ librsvg2-common,
+ network-manager-config-connectivity-debian,
  kbd,
  phosh-mobile-tweaks,
  phosh-plugins,
@@ -76,7 +86,7 @@ Provides:
  notification-daemon,
  polkit-1-auth-agent,
 Breaks:
- gnome-calls (<< 41~alpha),
+ gnome-calls (<< 42),
  gnome-control-center (<< 42),
  libgtk-3-0 (<< 3.24.30),
  xdg-desktop-portal-phosh (<< 0.44~),
@@ -160,6 +170,7 @@ Description: Pure Wayland shell for mobile devices - development files
 Package: libphosh-0.45-dev
 Architecture: any
 Section: libdevel
+Build-Profiles: <!pkg.phosh.nolib>
 Depends:
  ${misc:Depends},
  ${shlibs:Depends},
@@ -185,7 +196,7 @@ Breaks:
  libphosh0-42-dev,
 Replaces:
  libphosh0-42-dev,
-Description: Pure Wayland shell for mobile devices - binding developmen files
+Description: Pure Wayland shell for mobile devices - binding development files
  Phosh is a graphical shell for Wayland compositors speaking the layer-surface
  protocol and aimed at mobile devices like smart phones and tablets using touch
  based inputs and small screens.
@@ -196,20 +207,22 @@ Package: libphosh-0.45-0
 Architecture: any
 Section: libs
 Multi-Arch: same
+Build-Profiles: <!pkg.phosh.nolib>
 Depends:
  ${misc:Depends},
  ${shlibs:Depends},
- phosh-common (= ${source:Version}),
+ phosh-common (>= 0.45.0),
 Description: Pure Wayland shell for mobile devices - binding shared library
  Phosh is a graphical shell for Wayland compositors speaking the layer-surface
  protocol and aimed at mobile devices like smart phones and tablets using touch
  based inputs and small screens.
  .
- This package contains the shared libarary for language bindings.
+ This package contains the shared library for language bindings.
 
 Package: gir1.2-phosh-0-dev
 Architecture: any
 Section: libdevel
+Build-Profiles: <!pkg.phosh.nolib>
 Depends:
  ${misc:Depends},
  ${shlibs:Depends},
