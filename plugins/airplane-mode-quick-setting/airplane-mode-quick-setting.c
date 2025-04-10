@@ -115,9 +115,22 @@ on_clicked (PhoshAirplaneModeQuickSetting *self)
 }
 
 static void
+phosh_airplane_mode_finalize (GObject *object)
+{
+  PhoshAirplaneModeQuickSetting *self = PHOSH_AIRPLANE_MODE_QUICK_SETTING (object);
+
+  g_clear_object (&self->proxy);
+
+  G_OBJECT_CLASS (phosh_airplane_mode_quick_setting_parent_class)->finalize (object);
+}
+
+static void
 phosh_airplane_mode_quick_setting_class_init (PhoshAirplaneModeQuickSettingClass *klass)
 {
+  GObjectClass *object_class = (GObjectClass *)klass;
   GtkWidgetClass *widget_class = GTK_WIDGET_CLASS (klass);
+
+  object_class->finalize = phosh_airplane_mode_finalize;
 
   gtk_widget_class_set_template_from_resource (widget_class,
                                                "/mobi/phosh/plugins/airplane-mode-quick-setting/qs.ui");
