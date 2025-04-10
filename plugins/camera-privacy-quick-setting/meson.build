@@ -1,5 +1,9 @@
 name='camera-privacy-quick-setting'
 
+camera_privacy_quick_setting_deps = [
+  dependency('gsettings-desktop-schemas', version: '>=42'),
+]
+
 camera_privacy_quick_setting_resources = gnome.compile_resources(
   'phosh-plugin-camera-privacy-quick-setting-resources',
   'phosh-plugin-camera-privacy-quick-setting.gresources.xml',
@@ -18,7 +22,7 @@ phosh_camera_privacy_quick_setting_plugin = shared_module(
   c_args : ['-DG_LOG_DOMAIN="phosh-plugin-@0@"'.format(name),
             '-DPLUGIN_NAME="@0@"'.format(name),
            ],
-  dependencies: plugin_dep,
+  dependencies: [plugin_dep, camera_privacy_quick_setting_deps],
   install: true,
   install_dir: plugins_dir,
 )

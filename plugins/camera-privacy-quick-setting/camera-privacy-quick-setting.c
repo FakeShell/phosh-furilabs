@@ -66,7 +66,7 @@ on_settings_changed (PhoshCameraPrivacyQuickSetting *self,
 }
 
 static void
-phosh_camera_finalize (GObject *object)
+phosh_camera_privacy_finalize (GObject *object)
 {
   PhoshCameraPrivacyQuickSetting *self = PHOSH_CAMERA_PRIVACY_QUICK_SETTING (object);
 
@@ -75,14 +75,13 @@ phosh_camera_finalize (GObject *object)
   G_OBJECT_CLASS (phosh_camera_privacy_quick_setting_parent_class)->finalize (object);
 }
 
-
 static void
 phosh_camera_privacy_quick_setting_class_init (PhoshCameraPrivacyQuickSettingClass *klass)
 {
   GObjectClass *object_class = (GObjectClass *)klass;
   GtkWidgetClass *widget_class = GTK_WIDGET_CLASS (klass);
 
-  object_class->finalize = phosh_camera_finalize;
+  object_class->finalize = phosh_camera_privacy_finalize;
 
   gtk_widget_class_set_template_from_resource (widget_class,
                                                "/mobi/phosh/plugins/camera-privacy-quick-setting/qs.ui");
