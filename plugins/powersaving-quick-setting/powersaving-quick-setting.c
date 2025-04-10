@@ -68,9 +68,22 @@ on_clicked (PhoshPowersavingQuickSetting *self)
 }
 
 static void
+phosh_powersaving_finalize (GObject *object)
+{
+  PhoshPowersavingQuickSetting *self = PHOSH_POWERSAVING_QUICK_SETTING (object);
+
+  g_clear_object (&self->proxy);
+
+  G_OBJECT_CLASS (phosh_powersaving_quick_setting_parent_class)->finalize (object);
+}
+
+static void
 phosh_powersaving_quick_setting_class_init (PhoshPowersavingQuickSettingClass *klass)
 {
+  GObjectClass *object_class = (GObjectClass *)klass;
   GtkWidgetClass *widget_class = GTK_WIDGET_CLASS (klass);
+
+  object_class->finalize = phosh_powersaving_finalize;
 
   gtk_widget_class_set_template_from_resource (widget_class,
                                                "/mobi/phosh/plugins/powersaving-quick-setting/qs.ui");
