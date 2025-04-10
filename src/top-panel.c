@@ -151,13 +151,10 @@ static void
 update_drag_handle (PhoshTopPanel *self, gboolean queue_draw)
 {
   int handle, offset;
-  int top_bar_height;
-
-  top_bar_height = phosh_top_panel_get_bar_height (self);
 
   /* By default only the bottom bar handle is draggable */
   handle = phosh_layer_surface_get_configured_height (PHOSH_LAYER_SURFACE (self));
-  handle -= top_bar_height;
+  handle -= PHOSH_TOP_BAR_HEIGHT;
 
   /* Settings might enlarge the draggable area */
   offset = phosh_settings_get_drag_handle_offset (PHOSH_SETTINGS (self->settings));
@@ -443,7 +440,7 @@ phosh_top_panel_dragged (PhoshDragSurface *drag_surface, int margin)
   double progress, transparency;
 
   gtk_window_get_size (GTK_WINDOW (self), &width, &height);
-  progress = -margin / (double)(height - phosh_top_panel_get_bar_height (self));
+  progress = -margin / (double)(height - PHOSH_TOP_BAR_HEIGHT);
   phosh_arrow_set_progress (PHOSH_ARROW (self->arrow), progress);
 
   progress = MIN (1.0, progress);
@@ -683,9 +680,9 @@ phosh_top_panel_dispose (GObject *object)
 
 
 static int
-get_margin (int top_bar_height, gint height)
+get_margin (gint height)
 {
-  return (-1 * height) + top_bar_height;
+  return (-1 * height) + PHOSH_TOP_BAR_HEIGHT;
 }
 
 
@@ -693,16 +690,13 @@ static gboolean
 on_configure_event (PhoshTopPanel *self, GdkEventConfigure *event)
 {
   guint margin;
-  int computed_height;
+
+  margin = get_margin (event->height);
 
   /* ignore popovers like the power menu */
   if (gtk_widget_get_window (GTK_WIDGET (self)) != event->window)
     return FALSE;
 
-  computed_height = phosh_top_panel_get_bar_height (self);
-  phosh_drag_surface_set_exclusive (PHOSH_DRAG_SURFACE (self), computed_height); 
-
-  margin = get_margin (computed_height, event->height);
   g_debug ("%s: %dx%d margin: %d", __func__, event->height, event->width, margin);
 
   /* If the size changes we need to update the folded margin */
@@ -717,48 +711,16 @@ on_configure_event (PhoshTopPanel *self, GdkEventConfigure *event)
 static void
 phosh_top_panel_configured (PhoshLayerSurface *layer_surface)
 {
-  PhoshRotationManager *rotation_manager;
-  const gchar *rotation_class;
-  GtkStyleContext *context;
-  GList *current_classes;
-  PhoshShell *shell = phosh_shell_get_default ();
+  guint width, height;
 
-  rotation_manager = phosh_shell_get_rotation_manager (shell);
-  g_return_if_fail (rotation_manager);
-  rotation_class = phosh_rotation_manager_get_css_class (rotation_manager);
 
-  context = gtk_widget_get_style_context (GTK_WIDGET (layer_surface));
-  current_classes = gtk_style_context_list_classes (context);
+  width = phosh_layer_surface_get_configured_width  (layer_surface);
+  height = phosh_layer_surface_get_configured_height (layer_surface);
 
-  for (GList *l = current_classes; l; l = l->next) {
-    if (g_strcmp0 (l->data, rotation_class) == 0)
-      continue;
-
-    gtk_style_context_remove_class (context, l->data);
-  }
-  g_list_free (current_classes);
-
-  gtk_style_context_add_class (context, rotation_class);
+  g_debug ("%s: %dx%d", __func__, width, height);
 
   PHOSH_LAYER_SURFACE_CLASS (phosh_top_panel_parent_class)->configured (layer_surface);
 }
-
-
-static void
-on_top_bar_allocated (GtkWidget *widget, GdkRectangle *allocation, gpointer user_data)
-{
-  int screen_width, screen_height;
-  PhoshTopPanel *self = PHOSH_TOP_PANEL (user_data);
-  int computed_height = phosh_top_panel_get_bar_height (self);
-
-  gtk_window_get_size (GTK_WINDOW (self), &screen_width, &screen_height);
-
-  phosh_drag_surface_set_exclusive (PHOSH_DRAG_SURFACE (self), computed_height);
-  phosh_drag_surface_set_margin (PHOSH_DRAG_SURFACE (self), get_margin (computed_height, screen_height), 0);
-  update_drag_handle (self, FALSE);
-  phosh_layer_surface_wl_surface_commit (PHOSH_LAYER_SURFACE (self));
-}
-
 
 
 static void
@@ -944,7 +906,6 @@ phosh_top_panel_init (PhoshTopPanel *self)
                            self,
                            G_CONNECT_SWAPPED);
   on_layout_changed (self, layout_manager);
-  g_signal_connect (self->box_top_bar, "size-allocate", G_CALLBACK (on_top_bar_allocated), self);
 }
 
 
@@ -958,6 +919,7 @@ phosh_top_panel_new (struct zwlr_layer_shell_v1          *layer_shell,
                        /* layer-surface */
                        "layer-shell", layer_shell,
                        "wl-output", monitor->wl_output,
+                       "height", PHOSH_TOP_BAR_HEIGHT,
                        "anchor", ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP |
                                  ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT |
                                  ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT,
@@ -966,6 +928,7 @@ phosh_top_panel_new (struct zwlr_layer_shell_v1          *layer_shell,
                        "namespace", "phosh top-panel",
                        /* drag-surface */
                        "layer-shell-effects", layer_shell_effects,
+                       "exclusive", PHOSH_TOP_BAR_HEIGHT,
                        "threshold", PHOSH_TOP_PANEL_DRAG_THRESHOLD,
                        NULL);
 }
@@ -1038,20 +1001,4 @@ phosh_top_panel_set_bar_transparent (PhoshTopPanel *self, gboolean transparent)
   g_return_if_fail (PHOSH_IS_TOP_PANEL (self));
 
   phosh_util_toggle_style_class (GTK_WIDGET (self->top_bar_bin), "p-solid", !transparent);
-}
-
-int
-phosh_top_panel_get_bar_height (PhoshTopPanel *self)
-{
-  if (!self || !self->box_top_bar) return PHOSH_TOP_BAR_DEFAULT_HEIGHT;
-  return gtk_widget_get_allocated_height (GTK_WIDGET (self->box_top_bar));
-}
-
-
-void
-phosh_top_panel_force_update (PhoshTopPanel *self)
-{
-  g_return_if_fail (PHOSH_IS_TOP_PANEL (self));
-
-  phosh_top_panel_configured (PHOSH_LAYER_SURFACE (self));
 }

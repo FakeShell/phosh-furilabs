@@ -13,7 +13,7 @@
 
 G_DECLARE_FINAL_TYPE (PhoshTopPanel, phosh_top_panel, PHOSH, TOP_PANEL, PhoshDragSurface)
 
-#define PHOSH_TOP_BAR_DEFAULT_HEIGHT 32
+#define PHOSH_TOP_BAR_HEIGHT 32
 #define PHOSH_TOP_BAR_ICON_PIXEL_SIZE 16
 /* Minimum padding of network and indicator box to the left / right screen edge */
 #define PHOSH_TOP_BAR_MIN_PADDING 9
@@ -40,5 +40,3 @@ void               phosh_top_panel_unfold (PhoshTopPanel *self);
 PhoshTopPanelState phosh_top_panel_get_state (PhoshTopPanel *self);
 void               phosh_top_panel_set_layer (PhoshTopPanel *self, guint32 layer);
 void               phosh_top_panel_set_bar_transparent (PhoshTopPanel *self, gboolean transparent);
-int                phosh_top_panel_get_bar_height (PhoshTopPanel *self);
-void               phosh_top_panel_force_update (PhoshTopPanel *self);

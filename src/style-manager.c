@@ -31,8 +31,6 @@
 #define ACCENT_COLOR_SLATE      "#6f8396"
 #define ACCENT_COLOR_FOREGROUND "#ffffff"
 
-#define PHOSH_CSS_OVERRIDE_PATH "/usr/share/phosh/overrides.css"
-
 /**
  * PhoshStyleManager:
  *
@@ -146,15 +144,6 @@ on_gtk_theme_name_changed (PhoshStyleManager *self, GParamSpec *pspec, GtkSettin
   gtk_style_context_add_provider_for_screen (gdk_screen_get_default (),
                                              GTK_STYLE_PROVIDER (provider),
                                              GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
-
-  if (g_file_test (PHOSH_CSS_OVERRIDE_PATH, G_FILE_TEST_EXISTS)) {
-    g_autoptr (GtkCssProvider) override_provider = gtk_css_provider_new ();
-    gtk_css_provider_load_from_file (override_provider, g_file_new_for_path (PHOSH_CSS_OVERRIDE_PATH), NULL);
-    gtk_style_context_add_provider_for_screen (gdk_screen_get_default (),
-                                               GTK_STYLE_PROVIDER (override_provider),
-                                               GTK_STYLE_PROVIDER_PRIORITY_USER);
-  }
-
   g_set_object (&self->css_provider, provider);
 
   /* Refresh accent color */
