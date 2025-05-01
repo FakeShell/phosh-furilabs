@@ -57,13 +57,6 @@ quick_setting_plugins = [
   'scaling-quick-setting',
 #  'simple-custom-quick-setting',
   'wifi-hotspot-quick-setting',
-
-  # Furi Labs quick settings
-  'camera-privacy-quick-setting',
-  'location-privacy-quick-setting',
-  'microphone-privacy-quick-setting',
-  'powersaving-quick-setting',
-  'airplane-mode-quick-setting',
 ]
 
 plugin_schema_dirs = []
